@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Upkeep · Stash{% endblock %}
+{% from "_macros.html" import recall_list with context %}
+{% block body %}
+{% macro rows(list, show_done=False) %}
+<ul class="list">
+{% for m in list %}
+  <li class="{% if m.completed %}done{% endif %}">
+    <b>{{ m.name }}</b> on <a href="{{ url_for('item_page', item_id=m.item_id) }}">{{ m.item_name }}</a>{% if m.cost %} <span class="muted">{{ m.cost|money }}</span>{% endif %}
+    <div class="muted">{% if m.completed %}Done {{ m.completed|nice_date }}{% elif m.scheduled %}{% set d = days_until(m.scheduled) %}Due {{ m.scheduled|nice_date }}{% if d < 0 %}, {{ -d }} day{{ '' if d == -1 else 's' }} overdue{% elif d == 0 %}, today{% else %}, in {{ d }} day{{ '' if d == 1 else 's' }}{% endif %}{% else %}No date set{% endif %}{% if m.notes %} · {{ m.notes }}{% endif %}</div>
+    <div class="row">
+      {% if not m.completed %}<form method="post" action="{{ url_for('maintenance_complete', m_id=m.id) }}"><input type="hidden" name="next" value="{{ url_for('maintenance_page') }}"><button class="link">Mark done</button></form>{% endif %}
+      <form method="post" action="{{ url_for('maintenance_delete', m_id=m.id) }}" data-confirm="Delete this entry?"><input type="hidden" name="next" value="{{ url_for('maintenance_page') }}"><button class="link danger">Delete</button></form>
+    </div>
+  </li>
+{% endfor %}
+</ul>
+{% endmacro %}
+<div class="cols">
+<section class="panel">
+  <h1>Upkeep</h1>
+  <h2>Overdue <span class="muted">{{ overdue|length }}</span></h2>
+  {% if overdue %}{{ rows(overdue) }}{% else %}<p class="muted">Nothing overdue.</p>{% endif %}
+  <h2>Upcoming <span class="muted">{{ upcoming|length }}</span></h2>
+  {% if upcoming %}{{ rows(upcoming) }}{% else %}<p class="muted">Add upkeep entries from any item's page: filter changes, battery swaps, tune-ups.</p>{% endif %}
+  {% if done %}<details><summary>Done ({{ done|length }})</summary>{{ rows(done, True) }}</details>{% endif %}
+</section>
+<aside>
+  <section class="panel">
+    <h2>Recalls</h2>
+    {% if recall_hits %}{{ recall_list(recall_hits, True, url_for('maintenance_page')) }}
+    {% else %}<p class="muted">No recalls match your items{% if not recall_status.checked %} yet: the first check has not run{% endif %}.</p>{% endif %}
+    <p class="muted small">Checked against the CPSC recall list{% if recall_status.recalls %} ({{ '{:,}'.format(recall_status.recalls) }} recalls){% endif %}{% if recall_status.checked %}, last on {{ recall_status.checked|ago }}{% endif %}. Items need a brand or model number to be checked.{% if recall_status.error %} Last run failed: {{ recall_status.error }}{% endif %}</p>
+    {% if recall_running %}<p class="muted">A check is running now.</p>
+    {% else %}<form method="post" action="{{ url_for('recalls_check') }}"><input type="hidden" name="next" value="{{ url_for('maintenance_page') }}"><button class="btn small">Check now</button></form>{% endif %}
+  </section>
+  <section class="panel">
+    <h2>Warranties ending within 90 days</h2>
+    {% if warranties %}<ul class="list">{% for it in warranties %}<li><a href="{{ url_for('item_page', item_id=it.id) }}">{{ it.name }}</a> <span class="muted">{% set d = days_until(it.warranty_until) %}{% if d < 0 %}ended {{ it.warranty_until|nice_date }}{% else %}ends {{ it.warranty_until|nice_date }}{% endif %}</span></li>{% endfor %}</ul>
+    {% else %}<p class="muted">None.</p>{% endif %}
+  </section>
+</aside>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% macro chips(labels, plain=False) %}
+{% for l in labels %}{% if plain %}<span class="chip" style="--c:{{ l.color }}">{{ l.name }}</span>{% else %}<a class="chip" href="{{ url_for('items_page', label=l.id) }}" style="--c:{{ l.color }}">{{ l.name }}</a>{% endif %}{% endfor %}
+{% endmacro %}
+
+{% macro item_card(it, selectable=False) %}
+{% if selectable %}<div class="pickable"><input type="checkbox" class="pickbox" name="ids" value="{{ it.id }}" form="bulk" aria-label="Select {{ it.name }}">{% endif %}
+<a class="card item" href="{{ url_for('item_page', item_id=it.id) }}">
+  <div class="thumb">{% if it.photo_id %}<img src="{{ url_for('attachment_thumb', att_id=it.photo_id) }}" alt="" loading="lazy">{% if it.photo_stock %}<span class="stocktag">Stock</span>{% endif %}{% else %}<span class="noimg">{{ it.name[:1]|upper }}</span>{% endif %}</div>
+  <div class="meta">
+    <div class="name">{{ it.name }}{% if it.quantity != 1 %} <span class="qty">x{{ it.quantity }}</span>{% endif %}</div>
+    <div class="where">{{ it.location_text or 'No location' }}</div>
+    <div class="row">{{ chips(it.labels, plain=True) }}{% if it.purchase_price %}<span class="price">{{ it.purchase_price|money }}</span>{% endif %}</div>
+  </div>
+</a>
+{% if selectable %}</div>{% endif %}
+{% endmacro %}
+
+{% macro tree(nodes, depth=0) %}
+<ul class="tree {% if depth == 0 %}root{% endif %}">
+{% for n in nodes %}
+  <li>
+    <a href="{{ url_for('location_page', loc_id=n.loc.id) }}"><span class="folder">{% if n.children %}&#9662;{% else %}&#8226;{% endif %}</span> {{ n.loc.name }}{% if n.count %} <span class="count">{{ n.count }}</span>{% endif %}</a>
+    {% if n.children %}{{ tree(n.children, depth + 1) }}{% endif %}
+  </li>
+{% endfor %}
+</ul>
+{% endmacro %}
+
+{% macro warranty_badge(it) %}
+{% if it.lifetime_warranty %}<span class="badge ok">Lifetime warranty</span>
+{% elif it.warranty_until %}{% set d = days_until(it.warranty_until) %}
+  {% if d is none %}{% elif d < 0 %}<span class="badge off">Warranty ended {{ it.warranty_until|nice_date }}</span>
+  {% elif d <= 90 %}<span class="badge warn">Warranty ends in {{ d }} day{{ '' if d == 1 else 's' }}</span>
+  {% else %}<span class="badge ok">Warranty until {{ it.warranty_until|nice_date }}</span>{% endif %}
+{% endif %}
+{% endmacro %}
+
+{% macro recall_list(hits, show_item=True, next_url='') %}
+<ul class="list">
+{% for h in hits %}
+  <li>
+    <span class="badge {{ 'off' if h.verdict == 'possible' else 'warn' }}">{{ 'Possible recall' if h.verdict == 'possible' else 'Recall' }}</span>
+    {% if show_item %}<a href="{{ url_for('item_page', item_id=h.item_id) }}">{{ h.item_name }}</a>:{% endif %}
+    <a href="{{ h.url }}" target="_blank" rel="noopener noreferrer">{{ h.title }}</a>
+    <div class="muted">{{ h.recall_date|nice_date }}{% if h.reason %} · {{ h.reason }}{% endif %}</div>
+    {% if h.remedy %}<details class="plain"><summary>What to do</summary><p>{{ h.remedy }}</p>{% if h.hazard %}<p class="muted">Hazard: {{ h.hazard }}</p>{% endif %}</details>{% endif %}
+    <form method="post" action="{{ url_for('recall_dismiss', item_id=h.item_id, recall_number=h.recall_number) }}" data-confirm="Dismiss this recall for {{ h.item_name }}?">
+      <input type="hidden" name="next" value="{{ next_url }}"><button class="link">Not mine, dismiss</button>
+    </form>
+  </li>
+{% endfor %}
+</ul>
+{% endmacro %}

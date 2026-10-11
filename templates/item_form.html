@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit ' + item.name if item else 'Add item' }} · Stash{% endblock %}
+{% block body %}
+<section class="panel narrow">
+  <h1>{{ 'Edit ' + item.name if item else 'Add an item' }}</h1>
+  <form method="post" enctype="multipart/form-data" class="form" id="itemform">
+    <div class="snap">
+      <label>{{ 'Add photos' if item else 'Photos' }} <input type="file" name="photos" id="photos" accept="image/*" multiple></label>
+      {% if ai_ready %}
+      <div class="row">
+        <button type="button" class="btn small" id="snapfill" disabled>Fill in from photos</button>
+        <span class="muted small" id="snapstatus">{% if not item %}Take a photo of the item, and one of its label or serial plate if it has one. Claude fills in the empty fields.{% else %}Claude can read new photos and fill in fields that are still empty.{% endif %}</span>
+      </div>
+      {% endif %}
+    </div>
+    <label>Name <input name="name" required maxlength="200" value="{{ item.name if item else '' }}" {% if item or not ai_ready %}autofocus{% endif %}></label>
+    <div class="two">
+      <label>Quantity <input name="quantity" type="number" min="0" value="{{ item.quantity if item else 1 }}"></label>
+      <label>Location
+        <select name="location_id">
+          <option value="">None</option>
+          {% set sel = item.location_id if item else preset_location %}
+          {% for id, text, depth in locations %}<option value="{{ id }}" {% if id == sel %}selected{% endif %}>{{ text }}</option>{% endfor %}
+        </select>
+      </label>
+    </div>
+    <label>Description <textarea name="description" rows="2" maxlength="2000">{{ item.description if item else '' }}</textarea></label>
+    <fieldset>
+      <legend>Labels</legend>
+      <div class="row">
+      {% for l in labels %}<label class="chip pick" style="--c:{{ l.color }}"><input type="checkbox" name="labels" value="{{ l.id }}" {% if l.id in item_label_ids %}checked{% endif %}> {{ l.name }}</label>{% endfor %}
+      {% if not labels %}<span class="muted">No labels yet. Make some on the <a href="{{ url_for('labels_page') }}">Labels</a> page.</span>{% endif %}
+      </div>
+    </fieldset>
+    <details {% if item and (item.serial or item.model or item.manufacturer) %}open{% endif %}>
+      <summary>Details</summary>
+      <div class="two">
+        <label>Manufacturer <input name="manufacturer" maxlength="120" value="{{ item.manufacturer if item else '' }}"></label>
+        <label>Model <input name="model" maxlength="120" value="{{ item.model if item else '' }}"></label>
+      </div>
+      <label>Serial number <input name="serial" maxlength="120" value="{{ item.serial if item else '' }}"></label>
+    </details>
+    <details {% if item and (item.purchase_price or item.purchase_date or item.warranty_until or item.lifetime_warranty) %}open{% endif %}>
+      <summary>Purchase and warranty</summary>
+      <div class="two">
+        <label>Bought from <input name="purchase_from" maxlength="120" value="{{ item.purchase_from if item else '' }}"></label>
+        <label>Price <input name="purchase_price" inputmode="decimal" placeholder="0.00" value="{{ item.purchase_price if item and item.purchase_price is not none else '' }}"></label>
+      </div>
+      <div class="two">
+        <label>Purchase date <input name="purchase_date" type="date" value="{{ item.purchase_date or '' if item else '' }}"></label>
+        <label>Warranty until <input name="warranty_until" type="date" value="{{ item.warranty_until or '' if item else '' }}"></label>
+      </div>
+      <label class="check"><input type="checkbox" name="lifetime_warranty" {% if item and item.lifetime_warranty %}checked{% endif %}> Lifetime warranty</label>
+      <label>Warranty notes <textarea name="warranty_notes" rows="2" maxlength="1000">{{ item.warranty_notes if item else '' }}</textarea></label>
+    </details>
+    <details {% if fields %}open{% endif %}>
+      <summary>Custom fields</summary>
+      <div id="fields">
+        {% for k, v in fields.items() %}
+        <div class="two field"><input name="field_key" placeholder="Field" maxlength="60" value="{{ k }}"><input name="field_value" placeholder="Value" maxlength="500" value="{{ v }}"></div>
+        {% endfor %}
+        <div class="two field"><input name="field_key" placeholder="Field, like Color or Size" maxlength="60"><input name="field_value" placeholder="Value" maxlength="500"></div>
+      </div>
+      <button type="button" class="btn small" id="addfield">+ Another field</button>
+    </details>
+    <label>Notes <textarea name="notes" rows="3" maxlength="5000">{{ item.notes if item else '' }}</textarea></label>
+    {% if item %}<label class="check"><input type="checkbox" name="archived" {% if item.archived %}checked{% endif %}> Archived (sold, given away, or thrown out)</label>{% endif %}
+    <div class="actions">
+      <button class="btn primary">{{ 'Save' if item else 'Add item' }}</button>
+      {% if not item %}<button class="btn" name="another" value="1">Add and start another</button>{% endif %}
+      <a class="btn" href="{{ url_for('item_page', item_id=item.id) if item else url_for('items_page') }}">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

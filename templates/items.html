@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "_macros.html" import item_card with context %}
+{% block title %}Items · Stash{% endblock %}
+{% block body %}
+<section class="panel">
+  <form class="filters" method="get" action="{{ url_for('items_page') }}">
+    <input type="hidden" name="q" value="{{ q }}">
+    <select name="location" data-autosubmit>
+      <option value="">All locations</option>
+      {% for id, text, depth in locations %}<option value="{{ id }}" {% if id == loc %}selected{% endif %}>{{ text }}</option>{% endfor %}
+    </select>
+    <select name="label" data-autosubmit>
+      <option value="">All labels</option>
+      {% for l in labels %}<option value="{{ l.id }}" {% if l.id == label %}selected{% endif %}>{{ l.name }}</option>{% endfor %}
+    </select>
+    <select name="sort" data-autosubmit>
+      {% for k, v in [('updated','Recently updated'),('name','Name'),('created','Newest'),('price','Price'),('warranty','Warranty date')] %}<option value="{{ k }}" {% if k == sort %}selected{% endif %}>{{ v }}</option>{% endfor %}
+    </select>
+    <label class="check"><input type="checkbox" name="archived" value="1" {% if archived %}checked{% endif %} data-autosubmit> Archived</label>
+    {% if q or loc or label %}<a class="btn" href="{{ url_for('items_page') }}">Clear</a>{% endif %}
+    <span class="muted grow">{{ '{:,}'.format(items|length) }} item{{ '' if items|length == 1 else 's' }}{% if total_value %}, {{ total_value|money }}{% endif %}{% if q %} matching "{{ q }}"{% endif %}</span>
+    {% if items %}<button type="button" class="btn" id="selecttoggle">Select</button>{% endif %}
+    <a class="btn" href="{{ url_for('export_csv') }}">Export CSV</a>
+    <a class="btn" href="{{ url_for('export_zip') }}" title="Database, CSV, photos and documents">Export zip</a>
+  </form>
+  {% if items %}<div class="grid" id="itemgrid">{% for it in items %}{{ item_card(it, selectable=True) }}{% endfor %}</div>
+  <form method="post" action="{{ url_for('items_bulk') }}" id="bulk" class="bulkbar" hidden>
+    <input type="hidden" name="next" value="{{ request.full_path }}">
+    <span><b id="selcount">0</b> selected</span>
+    <button type="button" class="btn small" id="selectall">Select all {{ items|length }}</button>
+    <span class="bulkgroup">
+      <select name="location_id" aria-label="Move to location"><option value="">No location</option>{% for id, text, depth in locations %}<option value="{{ id }}">{{ text }}</option>{% endfor %}</select>
+      <button class="btn small" name="action" value="move">Move</button>
+    </span>
+    {% if labels %}<span class="bulkgroup">
+      <select name="label_id" aria-label="Label">{% for l in labels %}<option value="{{ l.id }}">{{ l.name }}</option>{% endfor %}</select>
+      <button class="btn small" name="action" value="add_label">Add label</button>
+      <button class="btn small" name="action" value="remove_label">Remove label</button>
+    </span>{% endif %}
+    {% if archived %}<button class="btn small" name="action" value="unarchive">Restore</button>
+    {% else %}<button class="btn small" name="action" value="archive">Archive</button>{% endif %}
+    <button class="btn small danger" name="action" value="delete" data-confirm-action="Delete the selected items and their photos? This cannot be undone.">Delete</button>
+    <button type="button" class="btn small" id="selectdone">Done</button>
+  </form>
+  {% else %}<p class="muted">Nothing here. <a href="{{ url_for('item_new', location_id=loc or '') }}">Add an item</a>.</p>{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,15 @@
+venv/
+stash.db
+stash.db-wal
+stash.db-shm
+uploads/
+*.log
+__pycache__/
+.DS_Store
+.claude/worktrees/
+orphans/
+.claude/
+*.db
+*.db-wal
+*.db-shm
+.env

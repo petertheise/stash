@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import tree with context %}
+{% block title %}Locations · Stash{% endblock %}
+{% block body %}
+<div class="cols">
+<section class="panel">
+  <h1>Locations <span class="muted">{{ n }}</span></h1>
+  {% if loc_tree %}{{ tree(loc_tree) }}{% else %}<p class="muted">No locations yet. Start with the big ones (Home, Garage, Basement, Storage unit) and nest shelves and bins under them.</p>{% endif %}
+</section>
+<aside>
+  <section class="panel">
+    <h2>Add a location</h2>
+    <form method="post" action="{{ url_for('location_new') }}" class="form">
+      <label>Name <input name="name" required maxlength="120" placeholder="Garage"></label>
+      <label>Inside
+        <select name="parent_id"><option value="">Top level</option>
+        {% for id, text, depth in locations %}<option value="{{ id }}">{{ text }}</option>{% endfor %}</select>
+      </label>
+      <label>Description <input name="description" maxlength="1000" placeholder="Optional"></label>
+      <button class="btn primary">Add</button>
+    </form>
+  </section>
+  <section class="panel">
+    <h2>Tip</h2>
+    <p class="muted">Print QR labels for bins and shelves from the <a href="{{ url_for('print_page') }}">QR labels</a> page. Scanning one opens the location with everything inside it.</p>
+  </section>
+</aside>
+</div>
+{% endblock %}

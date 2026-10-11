@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Review the walkthrough · Stash{% endblock %}
+{% block body %}
+<section class="panel">
+  <h1>Claude found {{ drafts|length }} thing{{ '' if drafts|length == 1 else 's' }}{% if place %} in {{ place }}{% endif %}</h1>
+  <p class="muted">Untick anything you do not want to track, fix names, then add them. Nothing is saved until you press Add.</p>
+  {% if drafts %}
+  <form method="post" action="{{ url_for('walkthrough_create', token=token) }}" class="form">
+    <label>Location
+      <select name="location_id">
+        <option value="">None</option>
+        {% for id, text, depth in locations %}<option value="{{ id }}" {% if id == loc %}selected{% endif %}>{{ text }}</option>{% endfor %}
+      </select>
+    </label>
+    <div class="drafts">
+    {% for d in drafts %}{% set i = loop.index0 %}
+      <div class="draft">
+        <img src="{{ url_for('walkthrough_photo', token=token, n=d.photo) }}" alt="Photo {{ d.photo }}" loading="lazy">
+        <div class="fields">
+          <label class="check"><input type="checkbox" name="keep_{{ i }}" value="1" checked> Add this</label>
+          <input name="name_{{ i }}" value="{{ d.name }}" maxlength="200" aria-label="Name">
+          <div class="two">
+            <input name="maker_{{ i }}" value="{{ d.manufacturer }}" placeholder="Brand" maxlength="120" aria-label="Brand">
+            <input name="model_{{ i }}" value="{{ d.model }}" placeholder="Model" maxlength="120" aria-label="Model">
+          </div>
+          <div class="two">
+            <input name="qty_{{ i }}" type="number" min="1" value="{{ d.quantity }}" aria-label="Quantity">
+            <span class="muted small">{% for lid in d.labels %}{{ labels[lid] }}{% if not loop.last %}, {% endif %}{% endfor %}</span>
+          </div>
+          <textarea name="desc_{{ i }}" rows="2" maxlength="2000" aria-label="Description">{{ d.description }}</textarea>
+        </div>
+      </div>
+    {% endfor %}
+    </div>
+    <div class="actions">
+      <button class="btn primary">Add ticked items</button>
+      <a class="btn" href="{{ url_for('walkthrough_page') }}">Start over</a>
+    </div>
+  </form>
+  {% else %}
+  <p>Claude did not spot anything worth tracking in those photos. <a href="{{ url_for('walkthrough_page') }}">Try again</a> with photos from a bit further back.</p>
+  {% endif %}
+</section>
+{% endblock %}

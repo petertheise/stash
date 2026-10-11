@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}QR labels · Stash{% endblock %}
+{% block body %}
+<section class="panel noprint">
+  <form class="filters" method="get" action="{{ url_for('print_page') }}">
+    <select name="kind" onchange="this.form.submit()">
+      <option value="locations" {% if kind == 'locations' %}selected{% endif %}>Location labels</option>
+      <option value="items" {% if kind == 'items' %}selected{% endif %}>Item labels</option>
+    </select>
+    <select name="location" onchange="this.form.submit()">
+      <option value="">Everywhere</option>
+      {% for id, text, depth in locations %}<option value="{{ id }}" {% if id == loc %}selected{% endif %}>{{ text }}</option>{% endfor %}
+    </select>
+    <span class="muted grow">{{ cards|length }} label{{ '' if cards|length == 1 else 's' }}. Each QR code opens the page on this server ({{ base }}), so scan them on the home network or over Tailscale.</span>
+    <button type="button" class="btn primary" onclick="window.print()">Print</button>
+  </form>
+</section>
+<section class="sheet">
+{% for c in cards %}
+  <div class="label">
+    <img src="{{ url_for('qr_image', kind=c.kind, obj_id=c.id) }}" alt="">
+    <div class="text"><b>{{ c.title }}</b>{% if c.sub %}<span>{{ c.sub }}</span>{% endif %}</div>
+  </div>
+{% endfor %}
+</section>
+{% endblock %}

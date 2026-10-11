@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>{% block title %}Stash{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="{{ url_for('static', filename='icon.svg') }}?v=2" type="image/svg+xml">
+<link rel="icon" href="{{ url_for('static', filename='favicon-64.png') }}?v=2" type="image/png" sizes="64x64">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='icon-180.png') }}?v=2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Stash">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1f2937">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="{{ url_for('index') }}"><img class="logo" src="{{ url_for('static', filename='icon.svg') }}?v=2" alt="" width="30" height="30"> Stash</a>
+  <form class="search" action="{{ url_for('items_page') }}" method="get" role="search" autocomplete="off">
+    <input type="search" name="q" id="q" placeholder="Search items, serials, models" value="{{ q or '' }}" aria-label="Search">
+    <div id="suggest" class="suggest" hidden></div>
+  </form>
+  <nav>
+    <a href="{{ url_for('items_page') }}" {% if request.endpoint in ('items_page','item_page','item_new','item_edit') %}class="on"{% endif %}>Items</a>
+    <a href="{{ url_for('locations_page') }}" {% if request.endpoint in ('locations_page','location_page') %}class="on"{% endif %}>Locations</a>
+    <a href="{{ url_for('labels_page') }}" {% if request.endpoint == 'labels_page' %}class="on"{% endif %}>Labels</a>
+    <a href="{{ url_for('maintenance_page') }}" {% if request.endpoint == 'maintenance_page' %}class="on"{% endif %}>Upkeep</a>
+    <a href="{{ url_for('ebay_page') }}" {% if request.endpoint in ('ebay_page', 'item_ebay') %}class="on"{% endif %}>eBay</a>
+    <a href="{{ url_for('report_page') }}" {% if request.endpoint == 'report_page' %}class="on"{% endif %}>Report</a>
+    <a href="{{ url_for('print_page') }}" {% if request.endpoint == 'print_page' %}class="on"{% endif %}>QR labels</a>
+    <a href="{{ url_for('import_page') }}" {% if request.endpoint == 'import_page' %}class="on"{% endif %}>Import</a>
+    {% if ai_ready %}<a class="btn" href="{{ url_for('walkthrough_page') }}" {% if request.endpoint == 'walkthrough_page' %}aria-current="page"{% endif %}>Walk a room</a>{% endif %}
+    <a class="btn primary" href="{{ url_for('item_new') }}">+ Add item</a>
+  </nav>
+</header>
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div class="flash">{% for m in messages %}<div>{{ m }}</div>{% endfor %}</div>
+{% endif %}
+{% endwith %}
+<main>
+{% block body %}{% endblock %}
+</main>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

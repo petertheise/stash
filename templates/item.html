@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% from "_macros.html" import chips, warranty_badge, recall_list with context %}
+{% block title %}{{ item.name }} · Stash{% endblock %}
+{% block body %}
+<nav class="crumbs"><a href="{{ url_for('locations_page') }}">Locations</a>{% for p in path %} / <a href="{{ url_for('location_page', loc_id=p.id) }}">{{ p.name }}</a>{% endfor %}{% if not path %} / <span class="muted">No location</span>{% endif %}</nav>
+<div class="cols">
+<section class="panel">
+  <div class="titlebar">
+    <h1>{{ item.name }}{% if item.quantity != 1 %} <span class="qty">x{{ item.quantity }}</span>{% endif %}{% if item.archived %} <span class="badge off">Archived</span>{% endif %}</h1>
+    <div class="actions">
+      <a class="btn" href="{{ url_for('item_edit', item_id=item.id) }}">Edit</a>
+      {% if on_ebay %}<a class="btn" href="{{ url_for('item_ebay', item_id=item.id) }}">eBay prep</a>
+      {% else %}<form method="post" action="{{ url_for('ebay_toggle', item_id=item.id) }}"><input type="hidden" name="next" value="{{ url_for('item_ebay', item_id=item.id) }}"><button class="btn">Sell on eBay</button></form>{% endif %}
+      <form method="post" action="{{ url_for('item_duplicate', item_id=item.id) }}"><button class="btn">Duplicate</button></form>
+      <form method="post" action="{{ url_for('item_delete', item_id=item.id) }}" data-confirm="Delete {{ item.name }} and its photos?"><button class="btn danger">Delete</button></form>
+    </div>
+  </div>
+  <div class="row">{{ chips(item.labels) }} {{ warranty_badge(item) }}</div>
+  {% if recall_hits %}<div class="alert inset">{{ recall_list(recall_hits, False, url_for('item_page', item_id=item.id)) }}</div>{% endif %}
+  {% if item.description %}<p class="desc">{{ item.description }}</p>{% endif %}
+
+  {% if photos %}
+  <div class="gallery">
+    {% for p in photos %}
+    <figure>
+      <a href="{{ url_for('attachment_file', att_id=p.id) }}" target="_blank" rel="noopener"><img src="{{ url_for('attachment_thumb', att_id=p.id) }}" alt="{{ p.original_name }}"></a>
+      <figcaption>
+        {% if p.is_primary %}<span class="muted">Main photo</span>{% else %}<form method="post" action="{{ url_for('attachment_primary', att_id=p.id) }}"><button class="link">Make main</button></form>{% endif %}
+        <form method="post" action="{{ url_for('attachment_delete', att_id=p.id) }}" data-confirm="Remove this photo?"><button class="link danger">Remove</button></form>
+      </figcaption>
+    </figure>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% if not photos and stock %}
+  <div class="gallery">
+    <figure class="stock">
+      <a href="{{ url_for('attachment_file', att_id=stock.id) }}" target="_blank" rel="noopener"><img src="{{ url_for('attachment_thumb', att_id=stock.id) }}" alt="Stock photo of {{ item.name }}"></a>
+      <figcaption>
+        <span class="muted">{% if stock_info.url %}<a href="{{ stock_info.url }}" target="_blank" rel="noopener noreferrer">{{ stock_info.label or 'Stock photo' }}</a>{% else %}{{ stock_info.label or 'Stock photo' }}{% endif %}</span>
+      </figcaption>
+      <div class="row small">
+        {% if ai_ready %}<form method="post" action="{{ url_for('item_stock', item_id=item.id) }}"><button class="link" data-busy-label="Looking...">Try another</button></form>{% endif %}
+        <form method="post" action="{{ url_for('item_stock_remove', item_id=item.id) }}" data-confirm="Remove the stock photo?"><button class="link danger">Remove</button></form>
+      </div>
+    </figure>
+  </div>
+  <p class="muted small">Stock photo until you add your own. Insurers want your own photos, so the report leaves this one out.</p>
+  {% elif not photos and ai_ready %}
+  <form method="post" action="{{ url_for('item_stock', item_id=item.id) }}" class="inline"><button class="btn small" data-busy-label="Looking for a photo...">Find a stock photo</button><span class="muted small">Stash looks for one on its own when you save an item without photos.</span></form>
+  {% endif %}
+  <form method="post" action="{{ url_for('item_files', item_id=item.id) }}" enctype="multipart/form-data" class="inline">
+    <input type="hidden" name="kind" value="photo">
+    <input type="file" name="files" accept="image/*" multiple required>
+    <button class="btn small">Add photos</button>
+  </form>
+
+  <h2>Facts</h2>
+  <table class="facts">
+    {% if item.manufacturer %}<tr><th>Manufacturer</th><td>{{ item.manufacturer }}</td></tr>{% endif %}
+    {% if item.model %}<tr><th>Model</th><td>{{ item.model }}</td></tr>{% endif %}
+    {% if item.serial %}<tr><th>Serial</th><td><code>{{ item.serial }}</code></td></tr>{% endif %}
+    {% if item.purchase_from %}<tr><th>Bought from</th><td>{{ item.purchase_from }}</td></tr>{% endif %}
+    {% if item.purchase_price is not none %}<tr><th>Price</th><td>{{ item.purchase_price|money }}{% if item.quantity != 1 %} each, {{ (item.purchase_price * item.quantity)|money }} total{% endif %}</td></tr>{% endif %}
+    {% if item.purchase_date %}<tr><th>Purchased</th><td>{{ item.purchase_date|nice_date }}</td></tr>{% endif %}
+    {% if item.replacement_cost is not none or item.replacement_checked %}<tr><th>Replace today</th><td>{% if item.replacement_cost is not none %}{{ item.replacement_cost|money }}{% if item.quantity != 1 %} each{% endif %}{% if item.replacement_product %} <span class="muted">for {% if item.replacement_url %}<a href="{{ item.replacement_url }}" target="_blank" rel="noopener noreferrer">{{ item.replacement_product }}</a>{% else %}{{ item.replacement_product }}{% endif %}</span>{% endif %}{% else %}<span class="muted">Not found</span>{% endif %}{% if item.replacement_note %}<div class="muted small">{{ item.replacement_note }}</div>{% endif %}<div class="muted small">Checked {{ item.replacement_checked|ago }}</div></td></tr>{% endif %}
+    {% if item.warranty_until or item.lifetime_warranty %}<tr><th>Warranty</th><td>{% if item.lifetime_warranty %}Lifetime{% else %}{{ item.warranty_until|nice_date }}{% endif %}{% if item.warranty_notes %}<div class="muted">{{ item.warranty_notes }}</div>{% endif %}</td></tr>{% endif %}
+    {% for k, v in item.fields_dict.items() %}<tr><th>{{ k }}</th><td>{{ v }}</td></tr>{% endfor %}
+    <tr><th>Added</th><td>{{ item.created|ago }}{% if item.updated - item.created > 3600 %}, updated {{ item.updated|ago }}{% endif %}</td></tr>
+  </table>
+  {% if ai_ready %}<div class="actions mt">
+    <form method="post" action="{{ url_for('item_replacement', item_id=item.id) }}"><button class="btn small" data-busy-label="Searching prices...">{{ 'Recheck' if item.replacement_checked else 'Check' }} today's price</button></form>
+    {% if not has_manual %}<form method="post" action="{{ url_for('item_manual', item_id=item.id) }}"><button class="btn small" data-busy-label="Looking for the manual..." {% if not (item.manufacturer or item.model) %}disabled title="Add a brand or model first"{% endif %}>Find the manual</button></form>{% endif %}
+  </div>{% endif %}
+  {% if item.notes %}<h2>Notes</h2><p class="notes">{{ item.notes }}</p>{% endif %}
+</section>
+
+<aside>
+  <section class="panel">
+    <h2>Documents</h2>
+    {% if docs %}<ul class="list">{% for d in docs %}<li><a href="{{ url_for('attachment_file', att_id=d.id) }}" target="_blank" rel="noopener">{{ d.original_name }}</a> <span class="muted">{{ d.kind }}</span>
+      <div class="row">
+      {% if ai_ready and d.filename.rsplit('.', 1)[-1].lower() in ('pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'heic') %}<form method="post" action="{{ url_for('attachment_read', att_id=d.id) }}" data-busy="Reading..."><button class="link">Read it</button></form>{% endif %}
+      <form method="post" action="{{ url_for('attachment_delete', att_id=d.id) }}" data-confirm="Remove {{ d.original_name }}?"><button class="link danger">Remove</button></form>
+      </div></li>{% endfor %}</ul>
+    {% else %}<p class="muted">Receipts, manuals, and warranty cards go here.</p>{% endif %}
+    <form method="post" action="{{ url_for('item_files', item_id=item.id) }}" enctype="multipart/form-data" class="form">
+      <select name="kind"><option value="receipt">Receipt</option><option value="manual">Manual</option><option value="warranty">Warranty</option><option value="document">Other</option></select>
+      <input type="file" name="files" multiple required>
+      {% if ai_ready %}<label class="check"><input type="checkbox" name="read" value="1" checked> Read receipts and warranty cards with Claude</label>{% endif %}
+      <button class="btn small" data-busy-label="Attaching...">Attach</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>Upkeep{% if maint_cost %} <span class="muted">{{ maint_cost|money }} so far</span>{% endif %}</h2>
+    {% if maint %}
+    <ul class="list">
+    {% for m in maint %}
+      <li class="{% if m.completed %}done{% endif %}">
+        <b>{{ m.name }}</b>{% if m.cost %} <span class="muted">{{ m.cost|money }}</span>{% endif %}
+        <div class="muted">{% if m.completed %}Done {{ m.completed|nice_date }}{% elif m.scheduled %}{% set d = days_until(m.scheduled) %}Due {{ m.scheduled|nice_date }}{% if d < 0 %} (overdue){% endif %}{% else %}No date{% endif %}{% if m.notes %} · {{ m.notes }}{% endif %}</div>
+        <div class="row">
+          {% if not m.completed %}<form method="post" action="{{ url_for('maintenance_complete', m_id=m.id) }}"><button class="link">Mark done</button></form>{% endif %}
+          <form method="post" action="{{ url_for('maintenance_delete', m_id=m.id) }}" data-confirm="Delete this entry?"><button class="link danger">Delete</button></form>
+        </div>
+      </li>
+    {% endfor %}
+    </ul>
+    {% endif %}
+    <form method="post" action="{{ url_for('maintenance_add', item_id=item.id) }}" class="form">
+      <input name="name" placeholder="Filter change, oil, battery" required maxlength="200">
+      <div class="two">
+        <label>Due <input type="date" name="scheduled"></label>
+        <label>Done <input type="date" name="completed"></label>
+      </div>
+      <div class="two">
+        <label>Cost <input name="cost" inputmode="decimal" placeholder="0.00"></label>
+        <label>Notes <input name="notes" maxlength="2000"></label>
+      </div>
+      <button class="btn small">Add entry</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2>QR label</h2>
+    <img class="qr" src="{{ url_for('qr_image', kind='item', obj_id=item.id) }}" alt="QR code for this item" width="120" height="120">
+    <p class="muted">Scan to open this page. <a href="{{ url_for('print_page', kind='items', location=item.location_id or '') }}">Print labels</a></p>
+  </section>
+</aside>
+</div>
+{% endblock %}

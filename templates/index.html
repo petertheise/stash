@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% from "_macros.html" import item_card, tree, chips, recall_list with context %}
+{% block body %}
+<section class="stats">
+  <a class="stat" href="{{ url_for('items_page') }}"><b>{{ '{:,}'.format(counts.total) }}</b><span>items{% if counts.records != counts.total %} in {{ '{:,}'.format(counts.records) }} records{% endif %}</span></a>
+  <a class="stat" href="{{ url_for('locations_page') }}"><b>{{ '{:,}'.format(counts.locations) }}</b><span>locations</span></a>
+  <a class="stat" href="{{ url_for('labels_page') }}"><b>{{ '{:,}'.format(counts.labels) }}</b><span>labels</span></a>
+  <a class="stat" href="{{ url_for('items_page', sort='price') }}"><b>{{ counts.value|money }}</b><span>purchase value</span></a>
+</section>
+
+{% if counts.records == 0 %}
+<section class="panel empty">
+  <h2>Nothing in the stash yet</h2>
+  <p>Start with a couple of locations (Home, Garage, Basement), then add items with photos. Or <a href="{{ url_for('import_page') }}">import a CSV</a> if you already keep a list.</p>
+  <p><a class="btn primary" href="{{ url_for('locations_page') }}">Set up locations</a> <a class="btn" href="{{ url_for('item_new') }}">Add an item</a></p>
+</section>
+{% endif %}
+
+{% if recall_hits %}
+<section class="panel alert">
+  <h2>Product recalls</h2>
+  {{ recall_list(recall_hits, True, url_for('index')) }}
+</section>
+{% endif %}
+
+<div class="cols">
+  <section class="panel">
+    <h2>Recently updated</h2>
+    {% if recent %}<div class="grid">{% for it in recent %}{{ item_card(it) }}{% endfor %}</div>
+    {% else %}<p class="muted">Items you add or edit show up here.</p>{% endif %}
+  </section>
+  <aside>
+    <section class="panel">
+      <h2>Locations</h2>
+      {% if loc_tree %}{{ tree(loc_tree) }}{% else %}<p class="muted">No locations yet.</p>{% endif %}
+      <form method="post" action="{{ url_for('location_new') }}" class="inline">
+        <input type="hidden" name="next" value="{{ url_for('index') }}">
+        <input name="name" placeholder="New top-level location" required>
+        <button class="btn">Add</button>
+      </form>
+    </section>
+    {% if labels %}
+    <section class="panel">
+      <h2>Labels</h2>
+      <div class="row">{% for l in labels %}<a class="chip" href="{{ url_for('items_page', label=l.id) }}" style="--c:{{ l.color }}">{{ l.name }} <small>{{ l.n }}</small></a>{% endfor %}</div>
+    </section>
+    {% endif %}
+    {% if warranties or due %}
+    <section class="panel">
+      <h2>Coming up</h2>
+      <ul class="list">
+      {% for m in due %}<li><a href="{{ url_for('item_page', item_id=m.item_id) }}">{{ m.name }}</a> on {{ m.item_name }} <span class="muted">{% set d = days_until(m.scheduled) %}{% if d < 0 %}overdue by {{ -d }} day{{ '' if d == -1 else 's' }}{% elif d == 0 %}today{% else %}in {{ d }} day{{ '' if d == 1 else 's' }}{% endif %}</span></li>{% endfor %}
+      {% for it in warranties %}<li>Warranty on <a href="{{ url_for('item_page', item_id=it.id) }}">{{ it.name }}</a> <span class="muted">{% set d = days_until(it.warranty_until) %}{% if d < 0 %}ended {{ it.warranty_until|nice_date }}{% else %}ends {{ it.warranty_until|nice_date }}{% endif %}</span></li>{% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </aside>
+</div>
+{% endblock %}

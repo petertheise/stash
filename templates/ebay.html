@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}eBay · Stash{% endblock %}
+{% block body %}
+<section class="panel">
+  <div class="titlebar">
+    <h1>To sell on eBay</h1>
+    <span class="muted">{{ items|length }} item{{ '' if items|length == 1 else 's' }}{% if total %}, about {{ total|money }} at suggested prices{% endif %}</span>
+  </div>
+  <p class="muted">Add things here with the "Sell on eBay" button on an item, or select several on the Items page and give them the {{ 'eBay' }} label. Archive an item once it sells.</p>
+  {% if items %}
+  <table class="rtable">
+    <thead><tr><th></th><th>Item</th><th class="num">Suggested</th><th class="num">Quick sale</th><th class="num">Similar listings</th><th>Researched</th><th></th></tr></thead>
+    <tbody>
+    {% for it in items %}{% set e = it.ebay %}
+      <tr>
+        <td class="ph">{% if it.photo_id %}<img src="{{ url_for('attachment_thumb', att_id=it.photo_id) }}" alt="">{% endif %}</td>
+        <td><a href="{{ url_for('item_ebay', item_id=it.id) }}"><b>{{ it.name }}</b></a>{% if it.quantity != 1 %} x{{ it.quantity }}{% endif %}<div class="muted small">{{ it.location_text }}</div></td>
+        <td class="num">{{ e.suggested_price|money if e else '' }}</td>
+        <td class="num">{{ e.quick_sale_price|money if e else '' }}</td>
+        <td class="num">{% if e and e.high %}{{ e.low|money }} to {{ e.high|money }}{% endif %}</td>
+        <td>{% if e %}{{ e.checked|ago }}{% else %}<span class="muted">Not yet</span>{% endif %}</td>
+        <td><a class="btn small" href="{{ url_for('item_ebay', item_id=it.id) }}">{{ 'Open' if e else 'Research' }}</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">Nothing on the list yet.</p>{% endif %}
+</section>
+{% endblock %}

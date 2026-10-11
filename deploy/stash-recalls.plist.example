@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Weekly recall check, Mondays 05:10. Replace /Users/YOU. -->
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>com.example.stash-recalls</string>
+    <key>ProgramArguments</key><array><string>/Users/YOU/Stash/venv/bin/python</string><string>/Users/YOU/Stash/app.py</string><string>--recalls</string></array>
+    <key>WorkingDirectory</key><string>/Users/YOU/Stash</string>
+    <key>StartCalendarInterval</key><dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>5</integer><key>Minute</key><integer>10</integer></dict>
+    <key>StandardOutPath</key><string>/Users/YOU/Library/Logs/stash-recalls.log</string>
+    <key>StandardErrorPath</key><string>/Users/YOU/Library/Logs/stash-recalls.log</string>
+</dict>
+</plist>

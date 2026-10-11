@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Import · Stash{% endblock %}
+{% block body %}
+<div class="cols">
+<section class="panel">
+  <h1>Import from CSV</h1>
+  <form method="post" enctype="multipart/form-data" class="form">
+    <input type="file" name="file" accept=".csv,text/csv" required>
+    <label class="check"><input type="checkbox" name="update_by_id" value="1" checked> Rows with an <code>id</code> update that item instead of adding a copy</label>
+    <button class="btn primary">Import</button>
+  </form>
+  <h2>Columns</h2>
+  <p>Only <code>name</code> is required. Column names are matched case-insensitively.</p>
+  <table class="table">
+    <tr><th>name</th><td>Item name</td></tr>
+    <tr><th>quantity</th><td>Whole number, defaults to 1</td></tr>
+    <tr><th>location</th><td>Path with slashes, like <code>Home / Garage / Shelf 2</code>. Missing locations are created.</td></tr>
+    <tr><th>labels</th><td>Comma separated. New labels are created.</td></tr>
+    <tr><th>description, serial, model, manufacturer, purchase_from, notes</th><td>Free text</td></tr>
+    <tr><th>purchase_price</th><td>Number, dollar signs and commas are fine</td></tr>
+    <tr><th>purchase_date, warranty_until</th><td>YYYY-MM-DD or MM/DD/YYYY</td></tr>
+    <tr><th>warranty_notes</th><td>Free text</td></tr>
+    <tr><th>lifetime_warranty, archived</th><td>yes or no</td></tr>
+    <tr><th>id</th><td>Stash's own item number, from an export. With the box above ticked, that item is updated; only the columns in your file change.</td></tr>
+    <tr><th>field:Anything</th><td>Custom field, for example <code>field:Color</code></td></tr>
+  </table>
+  <p class="muted"><a href="{{ url_for('export_csv') }}">Export CSV</a> gives you the same layout back, so you can edit it in a spreadsheet and re-import it safely. A Homebox or spreadsheet export needs only the column names changed. For a full backup with photos and documents, use <a href="{{ url_for('export_zip') }}">Export everything (zip)</a>.</p>
+</section>
+</div>
+{% endblock %}

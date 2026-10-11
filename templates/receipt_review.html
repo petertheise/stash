@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Receipt for {{ item.name }} · Stash{% endblock %}
+{% block body %}
+<section class="panel narrow">
+  <h1>What the receipt says</h1>
+  <p class="muted">Claude read <b>{{ att.original_name }}</b> for <a href="{{ url_for('item_page', item_id=item.id) }}">{{ item.name }}</a>. Tick what to save. Fields that are empty now are ticked for you.</p>
+  {% if line %}<p class="muted">Receipt line used: <code>{{ line }}</code></p>{% endif %}
+  {% if rows %}
+  <form method="post" action="{{ url_for('item_apply', item_id=item.id) }}" class="form">
+    <table class="table review">
+      <tr><th></th><th>Field</th><th>On the receipt</th><th>In Stash now</th></tr>
+      {% for r in rows %}
+      <tr{% if r.same %} class="muted"{% endif %}>
+        <td><input type="checkbox" name="apply" value="{{ r.key }}" id="ap_{{ r.key }}" {% if r.default and not r.same %}checked{% endif %} {% if r.same %}disabled{% endif %}></td>
+        <td><label for="ap_{{ r.key }}">{{ r.label }}</label></td>
+        <td><input name="v_{{ r.key }}" value="{{ r.new }}" {% if r.key in ('purchase_date', 'warranty_until') %}type="date"{% endif %}></td>
+        <td>{% if r.cur in (none, '') %}<span class="muted">empty</span>{% elif r.key == 'purchase_price' %}{{ r.cur|money }}{% elif r.key in ('purchase_date', 'warranty_until') %}{{ r.cur|nice_date }}{% else %}{{ r.cur }}{% endif %}{% if r.same %} (same){% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    <div class="actions">
+      <button class="btn primary">Save ticked fields</button>
+      <a class="btn" href="{{ url_for('item_page', item_id=item.id) }}">Skip</a>
+    </div>
+  </form>
+  {% else %}
+  <p>Claude did not find anything on this document beyond what Stash already has.</p>
+  <p><a class="btn" href="{{ url_for('item_page', item_id=item.id) }}">Back to {{ item.name }}</a></p>
+  {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_macros.html" import item_card with context %}
+{% block title %}{{ loc.name }} · Stash{% endblock %}
+{% block body %}
+<nav class="crumbs"><a href="{{ url_for('locations_page') }}">Locations</a>{% for p in path %} / {% if loop.last %}<b>{{ p.name }}</b>{% else %}<a href="{{ url_for('location_page', loc_id=p.id) }}">{{ p.name }}</a>{% endif %}{% endfor %}</nav>
+<div class="cols">
+<section class="panel">
+  <div class="titlebar">
+    <h1>{{ loc.name }} <span class="muted">{{ nested_count }} item{{ '' if nested_count == 1 else 's' }}</span></h1>
+    <div class="actions">
+      <a class="btn primary" href="{{ url_for('item_new', location_id=loc.id) }}">+ Add item here</a>
+      {% if ai_ready %}<a class="btn" href="{{ url_for('walkthrough_page', location_id=loc.id) }}">Walk this room</a>{% endif %}
+      <a class="btn" href="{{ url_for('items_page', location=loc.id) }}">Everything inside</a>
+    </div>
+  </div>
+  {% if loc.description %}<p class="desc">{{ loc.description }}</p>{% endif %}
+  {% if children %}
+  <h2>Inside</h2>
+  <div class="grid small">
+  {% for c in children %}<a class="card loc" href="{{ url_for('location_page', loc_id=c.id) }}"><b>{{ c.name }}</b><span class="muted">{{ c.count }} item{{ '' if c.count == 1 else 's' }}</span></a>{% endfor %}
+  </div>
+  {% endif %}
+  <h2>Items right here</h2>
+  {% if items %}<div class="grid">{% for it in items %}{{ item_card(it) }}{% endfor %}</div>
+  {% else %}<p class="muted">Nothing stored directly in {{ loc.name }}.</p>{% endif %}
+</section>
+<aside>
+  <section class="panel">
+    <h2>Add a sub-location</h2>
+    <form method="post" action="{{ url_for('location_new') }}" class="form">
+      <input type="hidden" name="parent_id" value="{{ loc.id }}">
+      <input name="name" required maxlength="120" placeholder="Shelf 2, Bin A, Drawer">
+      <button class="btn">Add inside {{ loc.name }}</button>
+    </form>
+  </section>
+  <section class="panel">
+    <h2>Edit</h2>
+    <form method="post" action="{{ url_for('location_edit', loc_id=loc.id) }}" class="form">
+      <label>Name <input name="name" value="{{ loc.name }}" maxlength="120" required></label>
+      <label>Inside
+        <select name="parent_id"><option value="">Top level</option>
+        {% for id, text, depth in locations %}{% if id != loc.id %}<option value="{{ id }}" {% if id == loc.parent_id %}selected{% endif %}>{{ text }}</option>{% endif %}{% endfor %}</select>
+      </label>
+      <label>Description <input name="description" value="{{ loc.description }}" maxlength="1000"></label>
+      <button class="btn">Save</button>
+    </form>
+    <form method="post" action="{{ url_for('location_delete', loc_id=loc.id) }}" data-confirm="Delete {{ loc.name }}? Items and sub-locations move up one level." class="mt"><button class="btn danger">Delete location</button></form>
+  </section>
+  <section class="panel">
+    <h2>QR label</h2>
+    <img class="qr" src="{{ url_for('qr_image', kind='location', obj_id=loc.id) }}" alt="QR code for this location" width="120" height="120">
+    <p class="muted"><a href="{{ url_for('print_page', kind='locations', location=loc.id) }}">Print labels for this and everything inside</a></p>
+  </section>
+</aside>
+</div>
+{% endblock %}

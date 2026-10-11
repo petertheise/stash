@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Inventory report · Stash{% endblock %}
+{% block body %}
+<section class="panel noprint">
+  <form class="filters" method="get" action="{{ url_for('report_page') }}">
+    <select name="location" data-autosubmit aria-label="Location">
+      <option value="">Whole house</option>
+      {% for id, text, depth in locations %}<option value="{{ id }}" {% if id == loc %}selected{% endif %}>{{ text }}</option>{% endfor %}
+    </select>
+    <span class="muted grow">For your insurer: photos, serial numbers, what you paid, and what it would cost to replace. Save it as a PDF from the print dialog.{% if pricing %} Pricing in progress: {{ pricing }}.{% endif %}</span>
+    {% if ai_ready and not pricing %}<button class="btn" form="priceall" title="Claude looks up today's price for items not priced in the last 6 months">Price everything</button>{% endif %}
+    <button type="button" class="btn primary" data-print>Print or save as PDF</button>
+  </form>
+  <form method="post" action="{{ url_for('report_price_all') }}" id="priceall" data-confirm="Look up today's replacement price for every item not priced in the last 6 months? It runs in the background, a few seconds per item, about a penny each."><input type="hidden" name="next" value="{{ request.full_path }}"></form>
+</section>
+
+<article class="report">
+  <header class="report-head">
+    <h1>Home inventory</h1>
+    <p>{{ scope }} · prepared {{ generated|nice_date }}</p>
+  </header>
+
+  <table class="summary">
+    <tr><th>Total purchase value</th><td>{{ totals.value|money }}</td></tr>
+    {% if totals.repriced %}<tr><th>Replacement cost today</th><td>{{ totals.replace|money }}{% if totals.repriced < totals.records %} <span class="muted">({{ '{:,}'.format(totals.repriced) }} of {{ '{:,}'.format(totals.records) }} records priced)</span>{% endif %}</td></tr>{% endif %}
+    <tr><th>Items</th><td>{{ '{:,}'.format(totals.count) }}{% if totals.count != totals.records %} in {{ '{:,}'.format(totals.records) }} records{% endif %}</td></tr>
+    <tr><th>Documented</th><td>{{ '{:,}'.format(totals.with_photo) }} with photos, {{ '{:,}'.format(totals.with_serial) }} with serial numbers, {{ '{:,}'.format(totals.with_receipt) }} with receipts</td></tr>
+    {% if totals.unpriced %}<tr><th>No price recorded</th><td>{{ '{:,}'.format(totals.unpriced) }} record{{ '' if totals.unpriced == 1 else 's' }}, not counted in the total</td></tr>{% endif %}
+  </table>
+
+  {% if sections|length > 1 %}
+  <h2>By location</h2>
+  <table class="rtable">
+    <thead><tr><th>Location</th><th class="num">Items</th><th class="num">Paid</th>{% if totals.repriced %}<th class="num">Replace</th>{% endif %}</tr></thead>
+    <tbody>{% for s in sections %}<tr><td>{{ s.name }}</td><td class="num">{{ '{:,}'.format(s.count) }}</td><td class="num">{{ s.value|money }}</td>{% if totals.repriced %}<td class="num">{{ s.replace|money }}</td>{% endif %}</tr>{% endfor %}</tbody>
+    <tfoot><tr><th>Total</th><th class="num">{{ '{:,}'.format(totals.count) }}</th><th class="num">{{ totals.value|money }}</th>{% if totals.repriced %}<th class="num">{{ totals.replace|money }}</th>{% endif %}</tr></tfoot>
+  </table>
+  {% endif %}
+
+  {% for s in sections %}
+  <section class="rsection">
+    <h2>{{ s.name }} <span class="muted">{{ s.value|money }}</span></h2>
+    <table class="rtable items">
+      <thead><tr><th></th><th>Item</th><th>Make and model</th><th>Serial</th><th>Purchased</th><th class="num">Paid</th><th class="num">Replace</th></tr></thead>
+      <tbody>
+      {% for it in s.rows %}
+      <tr>
+        <td class="ph">{% if it.photo_id and not it.photo_stock %}<img src="{{ url_for('attachment_thumb', att_id=it.photo_id) }}" alt="">{% endif %}</td>
+        <td><b>{{ it.name }}</b>{% if it.quantity != 1 %} x{{ it.quantity }}{% endif %}{% if it.docs %}<div class="muted small">On file: {{ it.docs|join(', ') }}</div>{% endif %}</td>
+        <td>{{ it.manufacturer }}{% if it.manufacturer and it.model %} {% endif %}{{ it.model }}</td>
+        <td>{% if it.serial %}<code>{{ it.serial }}</code>{% endif %}</td>
+        <td>{{ it.purchase_date|nice_date }}{% if it.purchase_from %}<div class="muted small">{{ it.purchase_from }}</div>{% endif %}</td>
+        <td class="num">{{ it.value|money if it.purchase_price is not none else '' }}</td>
+        <td class="num">{% if it.replacement_cost is not none %}{{ it.replace_value|money }}{% if it.quantity != 1 %}<div class="muted small">{{ it.replacement_cost|money }} each</div>{% endif %}{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  {% else %}
+  <p class="muted">No items here yet.</p>
+  {% endfor %}
+  <p class="muted small">Paid is the purchase price recorded in Stash. Replace is today's price for the same item new, or the closest current equivalent, found by web search on the date shown on each item's page.</p>
+</article>
+{% endblock %}

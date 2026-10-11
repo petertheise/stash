@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- macOS LaunchAgent for the web app. Replace /Users/YOU and the host names, then:
+     cp deploy/stash.plist.example ~/Library/LaunchAgents/com.example.stash.plist
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.example.stash.plist -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>            <string>com.example.stash</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/YOU/Stash/venv/bin/python</string>
+        <string>/Users/YOU/Stash/app.py</string>
+    </array>
+    <key>WorkingDirectory</key> <string>/Users/YOU/Stash</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>STASH_ALLOWED_HOSTS</key> <string>myserver,myserver.local,myserver.your-tailnet.ts.net</string>
+        <key>STASH_SECRET</key>        <string>replace-with-a-long-random-string</string>
+    </dict>
+    <key>RunAtLoad</key>        <true/>
+    <key>KeepAlive</key>        <true/>
+    <key>ThrottleInterval</key> <integer>10</integer>
+    <key>StandardOutPath</key>  <string>/Users/YOU/Library/Logs/stash.log</string>
+    <key>StandardErrorPath</key><string>/Users/YOU/Library/Logs/stash.log</string>
+</dict>
+</plist>

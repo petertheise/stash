@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Sell {{ item.name }} · Stash{% endblock %}
+{% block body %}
+<nav class="crumbs"><a href="{{ url_for('ebay_page') }}">eBay</a> / <a href="{{ url_for('item_page', item_id=item.id) }}">{{ item.name }}</a></nav>
+<div class="cols">
+<section class="panel">
+  <div class="titlebar">
+    <h1>Sell {{ item.name }}</h1>
+    <div class="actions">
+      {% if ai_ready %}<form method="post" action="{{ url_for('ebay_research', item_id=item.id) }}"><button class="btn primary" data-busy-label="Searching eBay...">{{ 'Research again' if data else 'Research prices' }}</button></form>{% endif %}
+      <a class="btn" href="{{ sold_url }}" target="_blank" rel="noopener noreferrer">Sold listings on eBay</a>
+    </div>
+  </div>
+  {% if data %}
+  <section class="stats">
+    <div class="stat"><b>{{ data.suggested_price|money }}</b><span>suggested list price</span></div>
+    <div class="stat"><b>{{ data.quick_sale_price|money }}</b><span>quick sale</span></div>
+    {% if data.high %}<div class="stat"><b>{{ data.low|money }} to {{ data.high|money }}</b><span>similar listings{% if data.comps and data.comps|selectattr("status", "equalto", "sold")|list|length == 0 %} (asking prices){% endif %}</span></div>{% endif %}
+  </section>
+  {% if data.note %}<p>{{ data.note }}</p>{% endif %}
+  <h2>Comparable listings</h2>
+  {% if data.comps %}
+  <table class="rtable">
+    <thead><tr><th>Listing</th><th>Condition</th><th>Status</th><th class="num">Price</th></tr></thead>
+    <tbody>{% for c in data.comps %}<tr><td><a href="{{ c.url }}" target="_blank" rel="noopener noreferrer">{{ c.title }}</a></td><td>{{ c.condition }}</td><td>{{ c.status|capitalize }}</td><td class="num">{{ c.price|money }}</td></tr>{% endfor %}</tbody>
+  </table>
+  {% else %}<p class="muted">Claude did not find close matches. Check the sold listings link above.</p>{% endif %}
+  <p class="muted small">Researched {{ data.checked|ago }}. Prices come from Claude's web search and are mostly asking prices, which run higher than what items actually sell for. Use the sold listings button to see real sale prices before you set yours.</p>
+  {% elif ai_ready %}
+  <p>Press Research prices and Claude searches eBay for similar items, then drafts a title, description, and price for you. It takes under a minute.</p>
+  {% else %}
+  <p class="muted">Claude is not set up on this server. Use the sold listings link to check prices by hand.</p>
+  {% endif %}
+</section>
+{% if data %}
+<aside>
+  <section class="panel">
+    <h2>Listing draft</h2>
+    <label class="copy">Title <span class="muted small">{{ data.title|length }} of 80</span>
+      <input readonly value="{{ data.title }}" data-copy></label>
+    <p><b>Category:</b> {{ data.category }}</p>
+    {% if data.specifics %}<table class="facts">{% for s in data.specifics %}<tr><th>{{ s.name }}</th><td>{{ s.value }}</td></tr>{% endfor %}</table>{% endif %}
+    <label class="copy">Description
+      <textarea readonly rows="9" data-copy>{{ data.description }}</textarea></label>
+    <p class="muted small">Tap a box to copy it.</p>
+    {% if data.shipping %}<p><b>Shipping:</b> {{ data.shipping }}</p>{% endif %}
+  </section>
+</aside>
+{% endif %}
+</div>
+{% endblock %}

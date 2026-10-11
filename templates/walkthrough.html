@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Walk a room · Stash{% endblock %}
+{% block body %}
+<section class="panel narrow">
+  <h1>Walk a room</h1>
+  <p class="muted">Take up to {{ max_photos }} photos of a room, closet, or shelf. Claude lists what it sees, and you choose which ones become items. Each item gets the photo that shows it best.</p>
+  <form method="post" enctype="multipart/form-data" class="form" data-busy="Claude is looking...">
+    <label>Where are these?
+      <select name="location_id">
+        <option value="">Pick a location</option>
+        {% for id, text, depth in locations %}<option value="{{ id }}" {% if id == preset %}selected{% endif %}>{{ text }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Photos <input type="file" name="photos" accept="image/*" multiple required></label>
+    <p class="muted small">Stand back far enough to see whole things. Close-ups of labels help Claude read brands and models. A batch of 20 photos takes about a minute.</p>
+    <div class="actions"><button class="btn primary" data-busy-label="Claude is looking...">List what is here</button></div>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Labels · Stash{% endblock %}
+{% block body %}
+<div class="cols">
+<section class="panel">
+  <h1>Labels</h1>
+  {% if labels %}
+  <table class="table">
+  {% for l in labels %}
+    <tr>
+      <td><a class="chip" href="{{ url_for('items_page', label=l.id) }}" style="--c:{{ l.color }}">{{ l.name }}</a></td>
+      <td class="muted">{{ l.n }} item{{ '' if l.n == 1 else 's' }}</td>
+      <td>
+        <form method="post" action="{{ url_for('label_edit', label_id=l.id) }}" class="inline">
+          <input name="name" value="{{ l.name }}" maxlength="60" required>
+          <input type="color" name="color" value="{{ l.color }}" aria-label="Color">
+          <button class="btn small">Save</button>
+        </form>
+      </td>
+      <td><form method="post" action="{{ url_for('label_delete', label_id=l.id) }}" data-confirm="Delete the {{ l.name }} label? Items keep everything else."><button class="link danger">Delete</button></form></td>
+    </tr>
+  {% endfor %}
+  </table>
+  {% else %}<p class="muted">Labels cut across locations: Electronics, Tools, Kids' stuff, Insurance, Loaned out.</p>{% endif %}
+</section>
+<aside>
+  <section class="panel">
+    <h2>New label</h2>
+    <form method="post" action="{{ url_for('label_new') }}" class="form">
+      <input name="name" required maxlength="60" placeholder="Electronics">
+      <div class="row swatches">
+        {% for c in colors %}<label class="swatch" style="--c:{{ c }}"><input type="radio" name="color" value="{{ c }}" {% if loop.first %}checked{% endif %}></label>{% endfor %}
+      </div>
+      <button class="btn primary">Add label</button>
+    </form>
+  </section>
+</aside>
+</div>
+{% endblock %}
